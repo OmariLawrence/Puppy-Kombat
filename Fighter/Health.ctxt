@@ -1,0 +1,12 @@
+#BlueJ class context
+comment0.target=Health
+comment0.text=\r\n\ Write\ a\ description\ of\ class\ Health\ here.\r\n\r\n\ @author\ (your\ name)\r\n\ @version\ (a\ version\ number\ or\ a\ date)\r\n
+comment1.params=x\ y\ xs\ ys
+comment1.target=Health(int,\ int,\ int,\ int)
+comment2.params=
+comment2.target=void\ redden()
+comment3.params=
+comment3.target=boolean\ isDead()
+comment4.params=g
+comment4.target=void\ draw(java.awt.Graphics)
+numComments=5

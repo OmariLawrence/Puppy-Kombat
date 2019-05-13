@@ -1,0 +1,27 @@
+#BlueJ class context
+comment0.target=Animation
+comment0.text=\r\n\ \ \ \ The\ Animation\ class\ manages\ a\ series\ of\ images\ (frames)\ and\r\n\ \ \ \ the\ amount\ of\ time\ to\ display\ each\ frame.\r\n
+comment1.params=f\ x\ y\ dx\ dy\ xSize\ ySize\ filename
+comment1.target=Animation(javax.swing.JFrame,\ int,\ int,\ int,\ int,\ int,\ int,\ java.lang.String)
+comment1.text=\r\n\ \ \ \ \ \ \ \ Creates\ a\ new,\ empty\ Animation.\r\n
+comment2.params=image\ duration
+comment2.target=void\ addFrame(java.awt.Image,\ long)
+comment2.text=\r\n\ \ \ \ \ \ \ \ Adds\ an\ image\ to\ the\ animation\ with\ the\ specified\r\n\ \ \ \ \ \ \ \ duration\ (time\ to\ display\ the\ image).\r\n
+comment3.params=
+comment3.target=void\ start()
+comment3.text=\r\n\ \ \ \ \ \ \ \ Starts\ this\ animation\ over\ from\ the\ beginning.\r\n
+comment4.params=
+comment4.target=void\ update()
+comment4.text=\r\n\ \ \ \ \ \ \ \ Updates\ this\ animation's\ current\ image\ (frame),\ if\r\n\ \ \ \ \ \ \ \ neccesary.\r\n
+comment5.params=
+comment5.target=void\ updatePosition()
+comment6.params=
+comment6.target=java.awt.Image\ getImage()
+comment6.text=\r\n\ \ \ \ \ \ \ \ Gets\ this\ Animation's\ current\ image.\ Returns\ null\ if\ this\r\n\ \ \ \ \ \ \ \ animation\ has\ no\ images.\r\n
+comment7.params=g
+comment7.target=void\ draw(java.awt.Graphics)
+comment8.params=
+comment8.target=int\ getNumFrames()
+comment9.params=i
+comment9.target=Animation.AnimFrame\ getFrame(int)
+numComments=10
