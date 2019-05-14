@@ -12,8 +12,7 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
 
     private Thread gameThread = null;               // the thread that controls the game
     private volatile boolean running = false;       // used to stop the animation thread
-
-    private Animation animation = null;     // animation sprite
+    
     private Image bgImage;              // background image
     private Fighter p,e1,e2,e3,e4,e5;
     private Fighter p_clone,e1_clone,e2_clone,e3_clone,e4_clone,e5_clone;
@@ -23,40 +22,20 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
     // used at game termination
     private boolean finishedOff = false;
 
-    // used by the quit 'button'
-    private volatile boolean isOverQuitButton = false;
-    private Rectangle quitButtonArea;
-
-    // used by the pause 'button'
-    private volatile boolean isOverPauseButton = false;
-    private Rectangle pauseButtonArea;
-    private volatile boolean isPaused = false;
-
-    // used by the stop 'button'
-    private volatile boolean isOverStopButton = false;
-    private Rectangle stopButtonArea;
     private volatile boolean isStopped = false;
-
-    // used by the show animation 'button'
-    private volatile boolean isOverShowAnimButton = false;
-    private Rectangle showAnimButtonArea;
-    private volatile boolean isAnimShown = false;
-
-    // used by the pause animation 'button'
-    private volatile boolean isOverPauseAnimButton = false;
-    private Rectangle pauseAnimButtonArea;
-    private volatile boolean isAnimPaused = false;
   
     // used for full-screen exclusive mode  
     private GraphicsDevice device;
     private Graphics gScr;
     private BufferStrategy bufferStrategy;
     
-    //game state booleans
+    //game state variables
     private boolean fightstate = false;
+    private int level = 0;
     
     //win condition
     private boolean gameover = false;
+    private long roundWin = 0;
     
     // Fight frame
     private Fightframe ff = null;
@@ -67,38 +46,8 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
         initFullScreen();
 
         // create game sprites
-        
-        addMouseListener(new MouseAdapter() {
-            public void mousePressed(MouseEvent e) {
-                testMousePress(e.getX(), e.getY()); 
-            }
-        });
-
-        addMouseMotionListener(new MouseMotionAdapter() {
-            public void mouseMoved(MouseEvent e) {
-                testMouseMove(e.getX(), e.getY()); 
-            }
-        });
 
         addKeyListener(this);           // respond to key events
-
-        // specify screen areas for the buttons
-        //  leftOffset is the distance of a button from the left side of the window
-
-        int leftOffset = (pWidth - (5 * 150) - (4 * 20)) / 2;
-        pauseButtonArea = new Rectangle(leftOffset, pHeight-60, 150, 40);
-
-        leftOffset = leftOffset + 170;
-        stopButtonArea = new Rectangle(leftOffset, pHeight-60, 150, 40);
-
-        leftOffset = leftOffset + 170;
-        showAnimButtonArea = new Rectangle(leftOffset, pHeight-60, 150, 40);
-
-        leftOffset = leftOffset + 170;
-        pauseAnimButtonArea = new Rectangle(leftOffset, pHeight-60, 150, 40);
-
-        leftOffset = leftOffset + 170;
-        quitButtonArea = new Rectangle(leftOffset, pHeight-60, 150, 40);
 
         loadImages();
         loadClips();
@@ -148,57 +97,6 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
             playSound.loop();
         }
     }
-    
-    /* This method handles mouse clicks on one of the buttons
-       (Pause, Stop, Show Anim, Pause Anim, and Quit).
-    */
-
-    private void testMousePress(int x, int y) {
-
-        if (isStopped && !isOverQuitButton)     // don't do anything if game stopped
-            return;
-
-        if (isOverStopButton) {         // mouse click on Stop button
-            isStopped = true;
-            isPaused = false;
-        }
-        else
-        if (isOverPauseButton) {        // mouse click on Pause button
-            isPaused = !isPaused;       // toggle pausing
-        }
-        else
-        if (isOverShowAnimButton && !isPaused) {// mouse click on Show Anim button
-            if (isAnimShown)        // make invisible if visible
-                isAnimShown = false;
-            else {              // make visible if invisible
-                isAnimShown = true;
-                isAnimPaused = false;   // always animate when making visible
-            }
-        }
-        else
-        if (isOverPauseAnimButton) {        // mouse click on Pause Anim button
-            isAnimPaused = !isAnimPaused;   // toggle pausing
-        }
-        else if (isOverQuitButton) {        // mouse click on Quit button
-            running = false;        // set running to false to terminate
-        }
-    }
-
-
-    /* This method checks to see if the mouse is currently moving over one of
-       the buttons (Pause, Stop, Show Anim, Pause Anim, and Quit). It sets a
-       boolean value which will cause the button to be displayed accordingly.
-    */
-
-    private void testMouseMove(int x, int y) { 
-        if (running) {
-            isOverPauseButton = pauseButtonArea.contains(x,y) ? true : false;
-            isOverStopButton = stopButtonArea.contains(x,y) ? true : false;
-            isOverShowAnimButton = showAnimButtonArea.contains(x,y) ? true : false;
-            isOverPauseAnimButton = pauseAnimButtonArea.contains(x,y) ? true : false;
-            isOverQuitButton = quitButtonArea.contains(x,y) ? true : false;
-        }
-    }
 
     // implementation of KeyListener interface
 
@@ -206,13 +104,57 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
 
         int keyCode = e.getKeyCode();
          
-        if ((keyCode == KeyEvent.VK_ESCAPE) || (keyCode == KeyEvent.VK_Q) ||
-                   (keyCode == KeyEvent.VK_END)) {
-                running = false;        // user can quit anytime by pressing
+        if ((keyCode == KeyEvent.VK_ESCAPE) || (keyCode == KeyEvent.VK_Q) || (keyCode == KeyEvent.VK_END)) {
+            running = false;        // user can quit anytime by pressing
             return;             //  one of these keys (ESC, Q, END)
-            }   
+        }
+        
+        if(keyCode == KeyEvent.VK_ENTER && ff == null){
+            adjustFF();
+        }
+        
+        if(ff != null){
+            if (ff.gameover)
+                return;
+        
+            if (keyCode == KeyEvent.VK_UP) {
+                if(ff.prompt.getCurrprompt() == 0){
+                    ff.hit();
+                }else{
+                    ff.miss();
+                }
+            }
+            if (keyCode == KeyEvent.VK_DOWN) {
+                if(ff.prompt.getCurrprompt() == 1){
+                    ff.hit();
+                }else{
+                    ff.miss();
+                }
+            }
+            if (keyCode == KeyEvent.VK_LEFT) {
+                if(ff.prompt.getCurrprompt() == 2){
+                    ff.hit();
+                }else{
+                    ff.miss();
+                }
+            }
+            if (keyCode == KeyEvent.VK_RIGHT) {
+                if(ff.prompt.getCurrprompt() == 3){
+                    ff.hit();
+                }else{
+                    ff.miss();
+                }
+            }
+        }
+        
+        if (ff.gameover){
+            ff = null;
+            if(!ff.win){
+                isStopped = true;
+            }
+        }
 
-        if (gameover || isPaused || isStopped)       
+        if (gameover || isStopped)       
             // don't do anything if either condition is true
             return;
     }
@@ -252,12 +194,6 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
 
     private void gameUpdate() { 
 
-        if (!isPaused) {
-            if (isAnimShown && !isAnimPaused &&!isStopped)
-                animation.update();
-            //if (!isStopped)
-                //ball.update();
-        }
     }
 
 
@@ -291,116 +227,22 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
 
     private void gameRender(Graphics gScr){
         
-        gScr.drawImage (bgImage, 0, 0, pWidth, pHeight, null);
-                            // draw the background image
-
-        drawButtons(gScr);          // draw the buttons
+        gScr.drawImage (bgImage, 0, 0, pWidth, pHeight, null);// draw the background image
 
         gScr.setColor(Color.black);
         
         if(!gameover){
             if(!fightstate){
                 drawTower();
+            }else{
+                ff.draw(gScr);
             }
         }else{
             EndScreen fin = new EndScreen(this, pWidth/2, pHeight/2);
         }
-
-        if (isAnimShown)            // draw the animation
-            animation.draw((Graphics2D)gScr);
                     
         if (isStopped)              // display game over message
             gameOverMessage(gScr);
-    }
-
-    /* This method draws the buttons on the screen. The text on a button
-       is highlighted if the mouse is currently over that button AND if
-       the action of the button can be carried out at the current time.
-    */
-
-    private void drawButtons (Graphics g) {
-        Font oldFont, newFont;
-
-        oldFont = g.getFont();      // save current font to restore when finished
-    
-        newFont = new Font ("TimesRoman", Font.ITALIC + Font.BOLD, 18);
-        g.setFont(newFont);     // set this as font for text on buttons
-
-            g.setColor(Color.black);    // set outline colour of button
-
-        // draw the pause 'button'
-
-        g.setColor(Color.BLACK);
-        g.drawOval(pauseButtonArea.x, pauseButtonArea.y, 
-               pauseButtonArea.width, pauseButtonArea.height);
-
-        if (isOverPauseButton && !isStopped)
-            g.setColor(Color.WHITE);
-        else
-            g.setColor(Color.RED);  
-
-        if (isPaused && !isStopped)
-            g.drawString("Paused", pauseButtonArea.x+45, pauseButtonArea.y+25);
-        else
-            g.drawString("Pause", pauseButtonArea.x+55, pauseButtonArea.y+25);
-
-        // draw the stop 'button'
-
-        g.setColor(Color.BLACK);
-        g.drawOval(stopButtonArea.x, stopButtonArea.y, 
-               stopButtonArea.width, stopButtonArea.height);
-
-        if (isOverStopButton && !isStopped)
-            g.setColor(Color.WHITE);
-        else
-            g.setColor(Color.RED);
-
-        if (isStopped)
-            g.drawString("Stopped", stopButtonArea.x+40, stopButtonArea.y+25);
-        else
-            g.drawString("Stop", stopButtonArea.x+60, stopButtonArea.y+25);
-
-        // draw the show animation 'button'
-
-        g.setColor(Color.BLACK);
-        g.drawOval(showAnimButtonArea.x, showAnimButtonArea.y, 
-               showAnimButtonArea.width, showAnimButtonArea.height);
-
-        if (isOverShowAnimButton && !isPaused && !isStopped)
-            g.setColor(Color.WHITE);
-        else
-            g.setColor(Color.RED);
-            g.drawString("Show Anim", showAnimButtonArea.x+35, showAnimButtonArea.y+25);
-
-        // draw the pause anim 'button'
-
-        g.setColor(Color.BLACK);
-        g.drawOval(pauseAnimButtonArea.x, pauseAnimButtonArea.y, 
-               pauseAnimButtonArea.width, pauseAnimButtonArea.height);
-
-        if (isOverPauseAnimButton && isAnimShown && !isPaused && !isStopped)
-            g.setColor(Color.WHITE);
-        else
-            g.setColor(Color.RED);
-
-        if (isAnimShown && isAnimPaused && !isStopped)
-            g.drawString("Anim Paused", pauseAnimButtonArea.x+30, pauseAnimButtonArea.y+25);
-        else
-            g.drawString("Pause Anim", pauseAnimButtonArea.x+35, pauseAnimButtonArea.y+25);
-
-        // draw the quit 'button'
-
-        g.setColor(Color.BLACK);
-        g.drawOval(quitButtonArea.x, quitButtonArea.y, 
-               quitButtonArea.width, quitButtonArea.height);
-        if (isOverQuitButton)
-            g.setColor(Color.WHITE);
-        else
-            g.setColor(Color.RED);
-
-        g.drawString("Quit", quitButtonArea.x+60, quitButtonArea.y+25);
-        g.setFont(oldFont);     // reset font
-
     }
 
     // displays a message to the screen when the user stops the game
@@ -459,21 +301,6 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
     public void loadImages() {
 
         bgImage = loadImage("images/arena.png");
-
-        Image player1 = loadImage("images/player1.png");
-        Image player2 = loadImage("images/player2.png");
-        Image player3 = loadImage("images/player3.png");
-    
-        // create animation object and insert frames
-
-        animation = new Animation(this, 20, 50, 15, 15, 250, 250, "images/player1.png");
-
-        animation.addFrame(player1, 250);
-        animation.addFrame(player2, 150);
-        animation.addFrame(player1, 150);
-        animation.addFrame(player2, 150);
-        animation.addFrame(player3, 200);
-        animation.addFrame(player2, 150);
     }
 
     public Image loadImage (String fileName) {
@@ -520,6 +347,33 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
         e3_clone.draw((Graphics2D) gScr);
         e4_clone.draw((Graphics2D) gScr);
         e5_clone.draw((Graphics2D) gScr);
+    }
+
+    public void adjustFF(){
+        if(ff == null){
+            level += 1;
+            switch(level){
+                case 1:
+                    ff = new Fightframe(this,p,e1,p_kick,e1_kick,pWidth,pHeight,level);
+                    break;
+                case 2:
+                    ff = new Fightframe(this,p,e2,p_kick,e2_kick,pWidth,pHeight,level);
+                    break;
+                case 3:
+                    ff = new Fightframe(this,p,e3,p_kick,e3_kick,pWidth,pHeight,level);
+                    break;
+                case 4:
+                    ff = new Fightframe(this,p,e4,p_kick,e4_kick,pWidth,pHeight,level);
+                    break;
+                case 5:
+                    ff = new Fightframe(this,p,e5,p_kick,e5_kick,pWidth,pHeight,level);
+                    break;
+            }
+            fightstate = true;
+        }else{
+            ff = null;
+            fightstate = false;
+        }
     }
 
     public void playClip (int index) {

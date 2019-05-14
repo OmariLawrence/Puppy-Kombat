@@ -10,13 +10,13 @@ import java.applet.AudioClip;
  * @author (your name)
  * @version (a version number or a date)
  */
-public class Fightframe implements KeyListener
+public class Fightframe
 {
     //screen dimensions
     private int pWidth, pHeight;
 
     //asset variables
-    private Prompt prompt;
+    public Prompt prompt;
     private Fighter player_idle, enemy_idle, player_kick, enemy_kick;
     private Health player_Health, enemy_Health;
     private Image bgImage;
@@ -36,6 +36,8 @@ public class Fightframe implements KeyListener
     private boolean miss = false;
     private boolean hitdrawn = true;
     private boolean changed = true;
+    private long hitTime;
+    private long changeTime;
     
     //win condition
     public boolean gameover = false;
@@ -64,43 +66,26 @@ public class Fightframe implements KeyListener
 
         loadImages();
         loadClips();
+        levelSetter();
     }
 
-    public void keyPressed (KeyEvent e) {
-
-        int keyCode = e.getKeyCode();
-
-        if (gameover)       
-            // don't do anything if either condition is true
-            return;
-        
-        if (keyCode == KeyEvent.VK_UP) {
-            if(prompt.getCurrprompt() == 0){
-                hit();
-            }else{
-                miss();
-            }
-        }
-        if (keyCode == KeyEvent.VK_DOWN) {
-            if(prompt.getCurrprompt() == 1){
-                hit();
-            }else{
-                miss();
-            }
-        }
-        if (keyCode == KeyEvent.VK_LEFT) {
-            if(prompt.getCurrprompt() == 2){
-                hit();
-            }else{
-                miss();
-            }
-        }
-        if (keyCode == KeyEvent.VK_RIGHT) {
-            if(prompt.getCurrprompt() == 3){
-                hit();
-            }else{
-                miss();
-            }
+    public void levelSetter(){
+        switch(level){
+            case 1:
+                waittime = 500;
+                break;
+            case 2:
+                waittime = 400;
+                break;
+            case 3:
+                waittime = 300;
+                break;
+            case 4:
+                waittime = 250;
+                break;
+            case 5:
+                waittime = 150;
+                break;
         }
     }
 
@@ -112,6 +97,7 @@ public class Fightframe implements KeyListener
         hitdrawn = false;
         playClip(2);
         changed = false;
+        hitTime =  System.currentTimeMillis();
         if(enemy_Health.isDead()){
             gameover = true;
             win = true;
@@ -126,6 +112,7 @@ public class Fightframe implements KeyListener
         hitdrawn = false;
         playClip(2);
         changed = false;
+        hitTime =  System.currentTimeMillis();
         if(player_Health.isDead()){
             gameover = true;
             win = false;
@@ -144,7 +131,7 @@ public class Fightframe implements KeyListener
 
     }
 
-    private void gameRender(Graphics gScr){
+    public void draw(Graphics gScr){
         if(!gameover){
             prompt.draw((Graphics2D)gScr);
             player_Health.draw((Graphics2D)gScr);
@@ -161,10 +148,22 @@ public class Fightframe implements KeyListener
                 enemy_kick.draw((Graphics2D)gScr);
                 hitdrawn = true;
             }
-            if((System.currentTimeMillis() - prompt.getStartTime()) >= waittime){
+            if((System.currentTimeMillis() - prompt.getStartTime()) >= waittime && (!hit && !miss)){
                 miss();
                 prompt.update();
             }
+            if(hit || miss){
+                frameChanger();
+            }
+        }
+    }
+
+    public void frameChanger(){
+        if((System.currentTimeMillis()-hitTime)>1000){
+            hit = false;
+            miss = false;
+            changed = true;
+            prompt.update();
         }
     }
     
