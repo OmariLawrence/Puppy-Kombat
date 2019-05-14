@@ -9,21 +9,16 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
     private static final int NUM_BUFFERS = 2;   // used for page flipping
 
     private int pWidth, pHeight;            // dimensions of screen
-    
-    private int waittime = 500;
 
     private Thread gameThread = null;               // the thread that controls the game
     private volatile boolean running = false;       // used to stop the animation thread
 
     private Animation animation = null;     // animation sprite
-    //private Bat bat;                // bat sprite
-    //private Ball ball;              // ball sprite
-    private Prompt prompt;
-    private Fighter f1,f1_kick,f2,f2_kick;
-    private Health player, enemy;
     private Image bgImage;              // background image
+    private Fighter p,e1,e2,e3,e4,e5;
+    private Fighter p_clone,e1_clone,e2_clone,e3_clone,e4_clone,e5_clone;
+    private Fighter p_kick,e1_kick,e2_kick,e3_kick,e4_kick,e5_kick;
     AudioClip playSound = null;         // theme sound
-    AudioClip punchSound = null;
 
     // used at game termination
     private boolean finishedOff = false;
@@ -56,15 +51,15 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
     private GraphicsDevice device;
     private Graphics gScr;
     private BufferStrategy bufferStrategy;
-
-    //fight frame conditions
-    private boolean hit = false;
-    private boolean miss = false;
-    private boolean hitdrawn = true;
+    
+    //game state booleans
+    private boolean fightstate = false;
     
     //win condition
     private boolean gameover = false;
-    private boolean changed = true;
+    
+    // Fight frame
+    private Fightframe ff = null;
 
     public GameFrame () {
         super("Bat and Ball Game: Full Screen Exclusive Mode");
@@ -72,18 +67,6 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
         initFullScreen();
 
         // create game sprites
-
-        //bat = new Bat (this, 0, 585, 7, 0, 40, 40, "images/bat.gif");
-        //ball = new Ball (this, bat, 0, 0, 0, 10, 20, 20, "images/ball.gif");
-        prompt = new Prompt(this, pWidth/2, ((pHeight/100)*10), 0, 0,  100, 100, "images/arrowKeys.png");
-        f1 = new Fighter(this,((pWidth/100)*10),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/Fighter1.png");
-        f2 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/Fighter2.png");
-        f1_kick = new Fighter(this,((pWidth/100)*80),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/Fighter1_kick.png");
-        f2_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/Fighter2_kick.png");
-        player = new Health(5,10, ((pWidth/100)*25), ((pHeight/100)*5));
-        enemy = new Health(((pWidth/100)*75),10, ((pWidth/100)*25), ((pHeight/100)*5));
-        
-        prompt.update();
         
         addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
@@ -119,6 +102,7 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
 
         loadImages();
         loadClips();
+        loadFighters();
         startGame();
     }
 
@@ -231,61 +215,6 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
         if (gameover || isPaused || isStopped)       
             // don't do anything if either condition is true
             return;
-        
-        if (keyCode == KeyEvent.VK_UP) {
-            if(prompt.getCurrprompt() == 0){
-                hit();
-            }else{
-                miss();
-            }
-        }
-        if (keyCode == KeyEvent.VK_DOWN) {
-            if(prompt.getCurrprompt() == 1){
-                hit();
-            }else{
-                miss();
-            }
-        }
-        if (keyCode == KeyEvent.VK_LEFT) {
-            if(prompt.getCurrprompt() == 2){
-                hit();
-            }else{
-                miss();
-            }
-        }
-        if (keyCode == KeyEvent.VK_RIGHT) {
-            if(prompt.getCurrprompt() == 3){
-                hit();
-            }else{
-                miss();
-            }
-        }
-    }
-    
-    public void hit(){
-        if(!changed) return;
-        System.out.println("Hit");
-        enemy.redden();
-        hit = true;
-        hitdrawn = false;
-        playClip(2);
-        changed = false;
-        if(enemy.isDead()){
-            gameover = true;
-        }
-    }
-    
-    public void miss(){
-        if(!changed) return;
-        System.out.println("Miss");
-        player.redden();
-        miss = true;
-        hitdrawn = false;
-        playClip(2);
-        changed = false;
-        if(player.isDead()){
-            gameover = true;
-        }
     }
 
     public void keyReleased (KeyEvent e) {
@@ -309,15 +238,8 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
         try {
             while (running) {
                 gameUpdate();     
-                    screenUpdate();
+                screenUpdate();
                 Thread.sleep(200);
-                if((hit && hitdrawn) || (miss && hitdrawn)){
-                    Thread.sleep(1000);
-                    prompt.update();
-                    hit = false;
-                    miss = false;
-                    changed = true;
-                }
             }
         }
         catch(InterruptedException e) {};
@@ -368,44 +290,20 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
     */
 
     private void gameRender(Graphics gScr){
- 
+        
         gScr.drawImage (bgImage, 0, 0, pWidth, pHeight, null);
                             // draw the background image
 
         drawButtons(gScr);          // draw the buttons
 
         gScr.setColor(Color.black);
-
-        //ball.draw((Graphics2D)gScr);        // draw the ball
-
-        //bat.draw((Graphics2D)gScr);     // draw the bat
+        
         if(!gameover){
-            prompt.draw((Graphics2D)gScr);
-            player.draw((Graphics2D)gScr);
-            enemy.draw((Graphics2D)gScr);
-            if(!hit){
-                f1.draw((Graphics2D)gScr);
-            }else{
-                f1_kick.draw((Graphics2D)gScr);
-                hitdrawn = true;
-            }
-            if(!miss || (System.currentTimeMillis() - prompt.getStartTime()) >= waittime){
-                f2.draw((Graphics2D)gScr);
-            }else{
-                f2_kick.draw((Graphics2D)gScr);
-                hitdrawn = true;
-            }
-            if((System.currentTimeMillis() - prompt.getStartTime()) >= waittime){
-                miss();
-                prompt.update();
+            if(!fightstate){
+                drawTower();
             }
         }else{
             EndScreen fin = new EndScreen(this, pWidth/2, pHeight/2);
-            if(enemy.isDead()){
-                fin.draw((Graphics2D)gScr, "CONGRATULATIONS YOU WIN");
-            }else{
-                fin.draw((Graphics2D)gScr, "YOU LOSE");
-            }
         }
 
         if (isAnimShown)            // draw the animation
@@ -586,20 +484,48 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
 
         try {
             playSound = Applet.newAudioClip (getClass().getResource("sounds/fightmusic.wav"));
-            punchSound = Applet.newAudioClip (getClass().getResource("sounds/PUNCH.wav"));
         }
         catch (Exception e) {
             System.out.println ("Error loading sound file: " + e);
         }
 
     }
+    
+    public void loadFighters(){
+        int x = pHeight/5;
+        p = new Fighter(this,((pWidth/100)*10),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/player.png");
+        p_kick = new Fighter(this,((pWidth/100)*80),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/player_kick.png");
+        p_clone = new Fighter(this,((pWidth/2)-((pWidth/100)*10)),x*4,0,0,((pWidth/100)*10),x,"images/player.png");
+        e1 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy1.png");
+        e1_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy1_kick.png");
+        e1_clone = new Fighter(this,(pWidth/2),x*4,0,0,((pWidth/100)*10),x,"images/enemy1.png");
+        e2 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy2.png");
+        e2_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy2_kick.png");
+        e2_clone = new Fighter(this,(pWidth/2),x*3,0,0,((pWidth/100)*10),x,"images/enemy2.png");
+        e3 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy3.png");
+        e3_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy3_kick.png");
+        e3_clone = new Fighter(this,(pWidth/2),x*2,0,0,((pWidth/100)*10),x,"images/enemy3.png");
+        e4 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy4.png");
+        e4_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy4_kick.png");
+        e4_clone = new Fighter(this,(pWidth/2),x*1,0,0,((pWidth/100)*10),x,"images/enemy4.png");
+        e5 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy5.png");
+        e5_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy5_kick.png");
+        e5_clone = new Fighter(this,(pWidth/2),x*0,0,0,((pWidth/100)*10),x,"images/enemy5.png");
+    }
+
+    public void drawTower(){
+        p_clone.draw((Graphics2D) gScr);
+        e1_clone.draw((Graphics2D) gScr);
+        e2_clone.draw((Graphics2D) gScr);
+        e3_clone.draw((Graphics2D) gScr);
+        e4_clone.draw((Graphics2D) gScr);
+        e5_clone.draw((Graphics2D) gScr);
+    }
 
     public void playClip (int index) {
 
         if (index == 1 && playSound != null)
             playSound.play();
-        if(index == 2 && punchSound != null)
-            punchSound.play();
     }
 
 }

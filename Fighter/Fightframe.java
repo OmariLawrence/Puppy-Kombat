@@ -10,17 +10,10 @@ import java.applet.AudioClip;
  * @author (your name)
  * @version (a version number or a date)
  */
-public class Fightframe extends JFrame implements Runnable, KeyListener
+public class Fightframe implements KeyListener
 {
-    //buffer number
-    private static final int NUM_BUFFERS = 2;
-
     //screen dimensions
     private int pWidth, pHeight;
-
-    //gamethread variables
-    private Thread gameThread = null;
-    private volatile boolean running = false;
 
     //asset variables
     private Prompt prompt;
@@ -36,92 +29,46 @@ public class Fightframe extends JFrame implements Runnable, KeyListener
     private boolean finishedoff = false;
 
     // used for full-screen exclusive mode  
-    private GraphicsDevice device;
     private Graphics gScr;
-    private BufferStrategy bufferStrategy;
 
     //fight frame conditions
     private boolean hit = false;
     private boolean miss = false;
     private boolean hitdrawn = true;
+    private boolean changed = true;
     
     //win condition
-    private boolean gameover = false;
-    private boolean changed = true;
+    public boolean gameover = false;
+    public boolean win;
 
-    public Fightframe(Fighter player_idle,Fighter enemy_idle,Fighter player_kick,Fighter enemy_kick,int lvl)
+    public Fightframe(JFrame f,Fighter pIdle,Fighter eIdle,Fighter pKick,Fighter eKick,int pWidth,int pHeight,int lvl)
     {
-        super("Bunny Fighter");
         level = lvl;
 
-        initFullScreen();
+        this.pWidth = pWidth;
+        this.pHeight = pHeight;
 
         //Create sprites
-        prompt = new Prompt(this, pWidth/2, ((pHeight/100)*10), 0, 0,  100, 100, "images/arrowKeys.png");
+        prompt = new Prompt(f, pWidth/2, ((pHeight/100)*10), 0, 0,  100, 100, "images/arrowKeys.png");
+        player_idle = pIdle;
+        enemy_idle = eIdle;
+        player_kick = pKick;
+        enemy_kick = eKick;
         player_Health = new Health(5,10, ((pWidth/100)*25), ((pHeight/100)*5));
         enemy_Health = new Health(((pWidth/100)*75),10, ((pWidth/100)*25), ((pHeight/100)*5));
 
         prompt.update();
-
-        addKeyListener(this);
+        
+        //POSSIBLE ERROR
+        //addKeyListener(f);
 
         loadImages();
         loadClips();
-        startGame();
-    }
-
-    private void initFullScreen(){
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        device = ge.getDefaultScreenDevice();
-
-        setUndecorated(true);   // no menu bar, borders, etc.
-        setIgnoreRepaint(true); // turn off all paint events since doing active rendering
-        setResizable(false);    // screen cannot be resized
-        
-        if (!device.isFullScreenSupported()) {
-            System.out.println("Full-screen exclusive mode not supported");
-            System.exit(0);
-        }
-
-        device.setFullScreenWindow(this); // switch on full-screen exclusive mode
-
-        // we can now adjust the display modes, if we wish
-
-        showCurrentMode();
-
-        pWidth = getBounds().width;
-        pHeight = getBounds().height;
-
-        try {
-            createBufferStrategy(NUM_BUFFERS);
-        }
-        catch (Exception e) {
-            System.out.println("Error while creating buffer strategy " + e); 
-            System.exit(0);
-        }
-
-        bufferStrategy = getBufferStrategy();
-    }
-
-    // this method creates and starts the game thread
-
-    private void startGame() { 
-        if (gameThread == null || !running) {
-            gameThread = new Thread(this);
-            gameThread.start();
-            playSound.loop();
-        }
     }
 
     public void keyPressed (KeyEvent e) {
 
         int keyCode = e.getKeyCode();
-         
-        if ((keyCode == KeyEvent.VK_ESCAPE) || (keyCode == KeyEvent.VK_Q) ||
-                   (keyCode == KeyEvent.VK_END)) {
-                running = false;        // user can quit anytime by pressing
-            return;             //  one of these keys (ESC, Q, END)
-            }   
 
         if (gameover)       
             // don't do anything if either condition is true
@@ -167,6 +114,7 @@ public class Fightframe extends JFrame implements Runnable, KeyListener
         changed = false;
         if(enemy_Health.isDead()){
             gameover = true;
+            win = true;
         }
     }
     
@@ -180,6 +128,7 @@ public class Fightframe extends JFrame implements Runnable, KeyListener
         changed = false;
         if(player_Health.isDead()){
             gameover = true;
+            win = false;
         }
     }
 
@@ -191,60 +140,11 @@ public class Fightframe extends JFrame implements Runnable, KeyListener
 
     }
 
-    public void run() {
-
-        running = true;
-        try {
-            while (running) {
-                gameUpdate();     
-                screenUpdate();
-                Thread.sleep(200);
-                if((hit && hitdrawn) || (miss && hitdrawn)){
-                    Thread.sleep(1000);
-                    prompt.update();
-                    hit = false;
-                    miss = false;
-                    changed = true;
-                }
-            }
-        }
-        catch(InterruptedException e) {};
-
-        finishOff();
-    }
-
     private void gameUpdate() { 
 
     }
 
-    private void screenUpdate() { 
-
-        try {
-            gScr = bufferStrategy.getDrawGraphics();
-            gameRender(gScr);
-            gScr.dispose();
-            if (!bufferStrategy.contentsLost())
-                bufferStrategy.show();
-            else
-                System.out.println("Contents of buffer lost.");
-      
-            // Sync the display on some systems.
-            // (on Linux, this fixes event queue problems)
-
-            Toolkit.getDefaultToolkit().sync();
-        }
-        catch (Exception e) { 
-            e.printStackTrace();  
-            running = false; 
-        } 
-    }
-
     private void gameRender(Graphics gScr){
- 
-        gScr.drawImage (bgImage, 0, 0, pWidth, pHeight, null);
-
-        gScr.setColor(Color.black);
-
         if(!gameover){
             prompt.draw((Graphics2D)gScr);
             player_Health.draw((Graphics2D)gScr);
@@ -265,33 +165,7 @@ public class Fightframe extends JFrame implements Runnable, KeyListener
                 miss();
                 prompt.update();
             }
-        }else{
-            finishOff();
         }
-    }
-
-    private void finishOff() { 
-        if (!finishedoff) {
-            finishedoff = true;
-            restoreScreen();
-            gameThread.interrupt();
-        }
-    }
-
-    private void restoreScreen() { 
-        Window w = device.getFullScreenWindow();
-        
-        if (w != null)
-            w.dispose();
-        
-        device.setFullScreenWindow(null);
-    }
-
-    private void showCurrentMode() {
-        DisplayMode dm = device.getDisplayMode();
-        System.out.println("Current Display Mode: (" + 
-                           dm.getWidth() + "," + dm.getHeight() + "," +
-                           dm.getBitDepth() + "," + dm.getRefreshRate() + ")  " );
     }
     
     public void loadImages() {
