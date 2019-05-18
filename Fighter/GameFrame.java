@@ -129,7 +129,7 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
             ff.update(keyCode);
         }
 
-        if (gameover || isStopped)       
+        if(gameover || isStopped)       
             // don't do anything if either condition is true
             return;
     }
@@ -169,8 +169,11 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
 
     private void gameUpdate() { 
         if (ff != null && ff.gameover){
-            if(!ff.win && !(ff instanceof FightFrameMP)){
-                isStopped = true;
+            if(!(ff instanceof FightFrameMP)){
+                if(!ff.win){
+                    isStopped = true;
+                }
+                p_clone.setY(p_clone.getY()-(pHeight/5));
             }
             ff = null;
             adjustFF(0);
@@ -217,7 +220,7 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
                 drawTower();
                 sp.draw((Graphics2D) gScr);
                 mp.draw((Graphics2D) gScr);
-            }else{
+            }else if(ff != null){
                 ff.draw(gScr);
             }
         }else{
@@ -358,9 +361,6 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
                 ff = new FightFrameMP(this,p,e5,p_kick,e5_kick,pWidth,pHeight,level);
             }
         }else{
-            if(!(ff instanceof FightFrameMP)){
-                p_clone.setY(p_clone.getY()-(pHeight/5));
-            }
             ff = null;
         }
     }

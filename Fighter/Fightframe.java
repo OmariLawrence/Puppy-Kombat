@@ -103,13 +103,13 @@ public class Fightframe
     public void levelSetter(){
         switch(level){
             case 1:
-                waittime = 500;
+                waittime = 750;
                 break;
             case 2:
-                waittime = 400;
+                waittime = 500;
                 break;
             case 3:
-                waittime = 300;
+                waittime = 350;
                 break;
             case 4:
                 waittime = 250;
