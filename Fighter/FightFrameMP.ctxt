@@ -1,0 +1,11 @@
+#BlueJ class context
+comment0.target=FightFrameMP
+comment0.text=\r\n\ Write\ a\ description\ of\ class\ FightFrameMP\ here.\r\n\r\n\ @author\ (your\ name)\r\n\ @version\ (a\ version\ number\ or\ a\ date)\r\n
+comment1.params=f\ pIdle\ eIdle\ pKick\ eKick\ pWidth\ pHeight\ lvl
+comment1.target=FightFrameMP(javax.swing.JFrame,\ Fighter,\ Fighter,\ Fighter,\ Fighter,\ int,\ int,\ int)
+comment1.text=\r\n\ Constructor\ for\ objects\ of\ class\ FightFrameMP\r\n
+comment2.params=keyCode
+comment2.target=void\ update(int)
+comment3.params=gScr
+comment3.target=void\ draw(java.awt.Graphics)
+numComments=4

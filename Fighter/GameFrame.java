@@ -9,6 +9,7 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
     private static final int NUM_BUFFERS = 2;   // used for page flipping
 
     private int pWidth, pHeight;            // dimensions of screen
+    private int TXoffset;
 
     private Thread gameThread = null;               // the thread that controls the game
     private volatile boolean running = false;       // used to stop the animation thread
@@ -18,6 +19,7 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
     private Fighter p_clone,e1_clone,e2_clone,e3_clone,e4_clone,e5_clone;
     private Fighter p_kick,e1_kick,e2_kick,e3_kick,e4_kick,e5_kick;
     AudioClip playSound = null;         // theme sound
+    private Message sp,mp;
 
     // used at game termination
     private boolean finishedOff = false;
@@ -44,6 +46,10 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
         super("Bat and Ball Game: Full Screen Exclusive Mode");
 
         initFullScreen();
+        TXoffset = ((pWidth/100)*10);
+        
+        sp = new Message(this, 0, pHeight-50, "Press Enter to challenge the tower");
+        mp = new Message(this, (pWidth/2)+TXoffset, pHeight-50, "Press M to challenge a friend");
 
         // create game sprites
 
@@ -110,48 +116,17 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
         }
         
         if(keyCode == KeyEvent.VK_ENTER && ff == null){
-            adjustFF();
+            adjustFF(1);
+        }
+        
+        if(keyCode == KeyEvent.VK_M && ff == null){
+            adjustFF(2);
         }
         
         if(ff != null){
             if (ff.gameover)
                 return;
-        
-            if (keyCode == KeyEvent.VK_UP) {
-                if(ff.prompt.getCurrprompt() == 0){
-                    ff.hit();
-                }else{
-                    ff.miss();
-                }
-            }
-            if (keyCode == KeyEvent.VK_DOWN) {
-                if(ff.prompt.getCurrprompt() == 1){
-                    ff.hit();
-                }else{
-                    ff.miss();
-                }
-            }
-            if (keyCode == KeyEvent.VK_LEFT) {
-                if(ff.prompt.getCurrprompt() == 2){
-                    ff.hit();
-                }else{
-                    ff.miss();
-                }
-            }
-            if (keyCode == KeyEvent.VK_RIGHT) {
-                if(ff.prompt.getCurrprompt() == 3){
-                    ff.hit();
-                }else{
-                    ff.miss();
-                }
-            }
-        }
-        
-        if (ff.gameover){
-            ff = null;
-            if(!ff.win){
-                isStopped = true;
-            }
+            ff.update(keyCode);
         }
 
         if (gameover || isStopped)       
@@ -193,7 +168,13 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
     // This method updates the game objects (animation and ball)
 
     private void gameUpdate() { 
-
+        if (ff != null && ff.gameover){
+            if(!ff.win && !(ff instanceof FightFrameMP)){
+                isStopped = true;
+            }
+            ff = null;
+            adjustFF(0);
+        }
     }
 
 
@@ -234,6 +215,8 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
         if(!gameover){
             if(!fightstate){
                 drawTower();
+                sp.draw((Graphics2D) gScr);
+                mp.draw((Graphics2D) gScr);
             }else{
                 ff.draw(gScr);
             }
@@ -320,24 +303,24 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
     
     public void loadFighters(){
         int x = pHeight/5;
-        p = new Fighter(this,((pWidth/100)*10),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/player.png");
-        p_kick = new Fighter(this,((pWidth/100)*80),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/player_kick.png");
-        p_clone = new Fighter(this,((pWidth/2)-((pWidth/100)*10)),x*4,0,0,((pWidth/100)*10),x,"images/player.png");
-        e1 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy1.png");
-        e1_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy1_kick.png");
-        e1_clone = new Fighter(this,(pWidth/2),x*4,0,0,((pWidth/100)*10),x,"images/enemy1.png");
-        e2 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy2.png");
-        e2_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy2_kick.png");
-        e2_clone = new Fighter(this,(pWidth/2),x*3,0,0,((pWidth/100)*10),x,"images/enemy2.png");
-        e3 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy3.png");
-        e3_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy3_kick.png");
-        e3_clone = new Fighter(this,(pWidth/2),x*2,0,0,((pWidth/100)*10),x,"images/enemy3.png");
-        e4 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy4.png");
-        e4_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy4_kick.png");
-        e4_clone = new Fighter(this,(pWidth/2),x*1,0,0,((pWidth/100)*10),x,"images/enemy4.png");
-        e5 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy5.png");
-        e5_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,((pWidth/100)*10),pHeight/2,"images/enemy5_kick.png");
-        e5_clone = new Fighter(this,(pWidth/2),x*0,0,0,((pWidth/100)*10),x,"images/enemy5.png");
+        p = new Fighter(this,TXoffset,pHeight/2,0,0,TXoffset,pHeight/2,"images/player.png");
+        p_kick = new Fighter(this,((pWidth/100)*80),pHeight/2,0,0,TXoffset,pHeight/2,"images/player_kick.png");
+        p_clone = new Fighter(this,((pWidth/2)-TXoffset),x*4,0,0,TXoffset,x,"images/player.png");
+        e1 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy1.png");
+        e1_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy1_kick.png");
+        e1_clone = new Fighter(this,(pWidth/2),x*4,0,0,TXoffset,x,"images/enemy1.png");
+        e2 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy2.png");
+        e2_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy2_kick.png");
+        e2_clone = new Fighter(this,(pWidth/2),x*3,0,0,TXoffset,x,"images/enemy2.png");
+        e3 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy3.png");
+        e3_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy3_kick.png");
+        e3_clone = new Fighter(this,(pWidth/2),x*2,0,0,TXoffset,x,"images/enemy3.png");
+        e4 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy4.png");
+        e4_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy4_kick.png");
+        e4_clone = new Fighter(this,(pWidth/2),x*1,0,0,TXoffset,x,"images/enemy4.png");
+        e5 = new Fighter(this,((pWidth/100)*90),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy5.png");
+        e5_kick = new Fighter(this,((pWidth/100)*20),pHeight/2,0,0,TXoffset,pHeight/2,"images/enemy5_kick.png");
+        e5_clone = new Fighter(this,(pWidth/2),x*0,0,0,TXoffset,x,"images/enemy5.png");
     }
 
     public void drawTower(){
@@ -349,30 +332,36 @@ public class GameFrame extends JFrame implements Runnable, KeyListener {
         e5_clone.draw((Graphics2D) gScr);
     }
 
-    public void adjustFF(){
+    public void adjustFF(int type){
+        fightstate = !fightstate;
         if(ff == null){
-            level += 1;
-            switch(level){
-                case 1:
-                    ff = new Fightframe(this,p,e1,p_kick,e1_kick,pWidth,pHeight,level);
-                    break;
-                case 2:
-                    ff = new Fightframe(this,p,e2,p_kick,e2_kick,pWidth,pHeight,level);
-                    break;
-                case 3:
-                    ff = new Fightframe(this,p,e3,p_kick,e3_kick,pWidth,pHeight,level);
-                    break;
-                case 4:
-                    ff = new Fightframe(this,p,e4,p_kick,e4_kick,pWidth,pHeight,level);
-                    break;
-                case 5:
-                    ff = new Fightframe(this,p,e5,p_kick,e5_kick,pWidth,pHeight,level);
-                    break;
+            if(type == 1){
+                level += 1;
+                switch(level){
+                    case 1:
+                        ff = new Fightframe(this,p,e1,p_kick,e1_kick,pWidth,pHeight,level);
+                        break;
+                    case 2:
+                        ff = new Fightframe(this,p,e2,p_kick,e2_kick,pWidth,pHeight,level);
+                        break;
+                    case 3:
+                        ff = new Fightframe(this,p,e3,p_kick,e3_kick,pWidth,pHeight,level);
+                        break;
+                    case 4:
+                        ff = new Fightframe(this,p,e4,p_kick,e4_kick,pWidth,pHeight,level);
+                        break;
+                    case 5:
+                        ff = new Fightframe(this,p,e5,p_kick,e5_kick,pWidth,pHeight,level);
+                        break;
+                }
+            }else if(type == 2){
+                ff = new FightFrameMP(this,p,e5,p_kick,e5_kick,pWidth,pHeight,level);
             }
-            fightstate = true;
         }else{
+            if(!(ff instanceof FightFrameMP)){
+                p_clone.setY(p_clone.getY()-(pHeight/5));
+            }
             ff = null;
-            fightstate = false;
         }
     }
 

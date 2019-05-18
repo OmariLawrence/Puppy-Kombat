@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
-import java.awt.image.BufferStrategy;
 import java.applet.Applet;
 import java.applet.AudioClip;
 /**
@@ -13,31 +12,32 @@ import java.applet.AudioClip;
 public class Fightframe
 {
     //screen dimensions
-    private int pWidth, pHeight;
+    protected int pWidth, pHeight;
 
     //asset variables
     public Prompt prompt;
-    private Fighter player_idle, enemy_idle, player_kick, enemy_kick;
-    private Health player_Health, enemy_Health;
-    private Image bgImage;
+    protected Fighter player_idle, enemy_idle, player_kick, enemy_kick;
+    protected Health player_Health, enemy_Health;
+    protected Image bgImage;
     AudioClip playSound = null;
     AudioClip hitSound = null;
     public int level;
-    private int waittime = 0;
+    protected int waittime = 0;
+    protected long promptstart;
 
     //used at game termination
-    private boolean finishedoff = false;
+    protected boolean finishedoff = false;
 
     // used for full-screen exclusive mode  
-    private Graphics gScr;
+    protected Graphics gScr;
 
     //fight frame conditions
-    private boolean hit = false;
-    private boolean miss = false;
-    private boolean hitdrawn = true;
-    private boolean changed = true;
-    private long hitTime;
-    private long changeTime;
+    protected boolean hit = false;
+    protected boolean miss = false;
+    protected boolean hitdrawn = true;
+    protected boolean changed = true;
+    protected long hitTime;
+    protected long changeTime;
     
     //win condition
     public boolean gameover = false;
@@ -60,13 +60,44 @@ public class Fightframe
         enemy_Health = new Health(((pWidth/100)*75),10, ((pWidth/100)*25), ((pHeight/100)*5));
 
         prompt.update();
-        
+        promptstart = System.currentTimeMillis();
         //POSSIBLE ERROR
         //addKeyListener(f);
 
         loadImages();
         loadClips();
         levelSetter();
+    }
+    
+    public void update (int keyCode) {
+        if (keyCode == KeyEvent.VK_UP) {
+            if(prompt.getCurrprompt() == 0){
+                hit();
+            }else{
+                miss();
+            }
+        }
+        if (keyCode == KeyEvent.VK_DOWN) {
+            if(prompt.getCurrprompt() == 1){
+                hit();
+            }else{
+                miss();
+            }
+        }
+        if (keyCode == KeyEvent.VK_LEFT) {
+            if(prompt.getCurrprompt() == 2){
+                hit();
+            }else{
+                miss();
+            }
+        }
+        if (keyCode == KeyEvent.VK_RIGHT) {
+            if(prompt.getCurrprompt() == 3){
+                hit();
+            }else{
+                miss();
+            }
+        }
     }
 
     public void levelSetter(){
@@ -119,18 +150,6 @@ public class Fightframe
         }
     }
 
-    public void keyReleased (KeyEvent e) {
-
-    }
-
-    public void keyTyped (KeyEvent e) {
-
-    }
-
-    private void gameUpdate() { 
-
-    }
-
     public void draw(Graphics gScr){
         if(!gameover){
             prompt.draw((Graphics2D)gScr);
@@ -142,7 +161,7 @@ public class Fightframe
                 player_kick.draw((Graphics2D)gScr);
                 hitdrawn = true;
             }
-            if(!miss || (System.currentTimeMillis() - prompt.getStartTime()) >= waittime){
+            if(!miss || (System.currentTimeMillis() - prompt.getStartTime()) < waittime){
                 enemy_idle.draw((Graphics2D)gScr);
             }else{
                 enemy_kick.draw((Graphics2D)gScr);
@@ -150,7 +169,8 @@ public class Fightframe
             }
             if((System.currentTimeMillis() - prompt.getStartTime()) >= waittime && (!hit && !miss)){
                 miss();
-                prompt.update();
+                frameChanger();
+                promptstart = System.currentTimeMillis();
             }
             if(hit || miss){
                 frameChanger();
@@ -159,11 +179,16 @@ public class Fightframe
     }
 
     public void frameChanger(){
+        long check = System.currentTimeMillis() - promptstart;
+        if(check < waittime){
+            return;
+        }
         if((System.currentTimeMillis()-hitTime)>1000){
             hit = false;
             miss = false;
             changed = true;
             prompt.update();
+            promptstart = System.currentTimeMillis();
         }
     }
     
